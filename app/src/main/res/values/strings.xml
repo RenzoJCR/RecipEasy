@@ -1,0 +1,41 @@
+<resources>
+    <string name="app_name">RecipEasy</string>
+
+    <!-- Login Activity -->
+    <string name="welcome_back">¡Bienvenido de nuevo!</string>
+    <string name="email_hint">Correo electrónico</string>
+    <string name="password_hint">Contraseña</string>
+    <string name="login_button">Iniciar Sesión</string>
+    <string name="register_prompt">¿No tienes cuenta?</string>
+    <string name="register_link">Regístrate aquí</string>
+
+    <!-- Register Activity -->
+    <string name="create_account">Crear Cuenta</string>
+    <string name="name_hint">Nombre completo</string>
+    <string name="confirm_password_hint">Confirmar contraseña</string>
+    <string name="register_button">Registrarse</string>
+    <string name="login_prompt">¿Ya tienes cuenta?</string>
+    <string name="login_link">Inicia sesión aquí</string>
+
+    <!-- Main Activity Tabs -->
+    <string name="tab_desayuno">Desayuno</string>
+    <string name="tab_almuerzo">Almuerzo</string>
+    <string name="tab_cena">Cena</string>
+    <string name="tab_postres">Postres</string>
+    <string name="tab_favoritos">Favoritos</string>
+
+    <!-- Search -->
+    <string name="search_hint">Buscar recetas...</string>
+
+    <!-- Recipe Details -->
+    <string name="time_label">Tiempo de preparación</string>
+    <string name="portions_label">Porciones</string>
+    <string name="difficulty_label">Dificultad</string>
+    <string name="ingredients_label">Ingredientes</string>
+    <string name="steps_label">Pasos de preparación</string>
+
+    <!-- Messages -->
+    <string name="loading">Cargando...</string>
+    <string name="no_recipes">No hay recetas disponibles</string>
+    <string name="no_favorites">No tienes recetas favoritas</string>
+</resources>
