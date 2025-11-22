@@ -1,5 +1,6 @@
 package com.recipeasy.models
 
+import android.content.Context
 import java.io.Serializable
 
 data class Receta(
@@ -44,4 +45,10 @@ data class Receta(
             )
         }
     }
+
+    fun getImageResId(context: Context): Int =
+        context.resources.getIdentifier(imagen, "drawable", context.packageName)
+
+    fun getVideoResId(context: Context): Int =
+        context.resources.getIdentifier(imagen, "raw", context.packageName)
 }
