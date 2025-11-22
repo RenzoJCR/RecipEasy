@@ -9,6 +9,8 @@ import com.recipeasy.R
 import com.recipeasy.database.DatabaseHelper
 import com.recipeasy.models.Receta
 import com.recipeasy.utils.SharedPreferencesHelper
+import android.content.Intent
+
 
 class RecipeDetailActivity : AppCompatActivity() {
 
@@ -31,10 +33,57 @@ class RecipeDetailActivity : AppCompatActivity() {
             setupViews(receta!!)
             checkIfFavorite()
             setupFavoriteButton()
+            setupShareButton()
         } else {
             finish() // Si no hay receta, cerramos la actividad
         }
     }
+
+    private fun setupShareButton() {
+        val shareButton = findViewById<ImageView>(R.id.ivShare)
+
+        shareButton.setOnClickListener {
+            receta?.let { receta ->
+                compartirReceta(receta)
+            }
+        }
+    }
+
+    private fun compartirReceta(receta: Receta) {
+
+        val ingredientesTexto = receta.ingredientes.joinToString("\n") { "• $it" }
+
+        val pasosTexto = receta.pasos
+            .mapIndexed { index, paso -> "${index + 1}. $paso" }
+            .joinToString("\n")
+
+        val textoCompartido = """
+🍽 *${receta.nombre}*
+———————————————
+
+📝 *Descripción*  
+${receta.descripcion}
+
+🧂 *Ingredientes*  
+$ingredientesTexto
+
+👩‍🍳 *Preparación*  
+$pasosTexto
+
+""".trimIndent()
+
+        // 1) Intent genérico para compartir texto
+        val sendIntent = Intent(Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            putExtra(Intent.EXTRA_TEXT, textoCompartido)
+        }
+
+        // 2) Mostramos el chooser para que el usuario elija app (WhatsApp, Telegram, Gmail, etc.)
+        val shareIntent = Intent.createChooser(sendIntent, "Compartir receta con...")
+        startActivity(shareIntent)
+    }
+
+
 
     private fun setupViews(receta: Receta) {
         // Configuramos los views con los datos de la receta
@@ -105,4 +154,6 @@ class RecipeDetailActivity : AppCompatActivity() {
         }
         favoriteButton.setImageResource(drawable)
     }
+
+
 }
