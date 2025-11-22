@@ -38,6 +38,22 @@
                 android:src="@drawable/ic_favorite_border"
                 android:contentDescription="Agregar a favoritos" />
 
+            <!-- Botón de compartir -->
+            <ImageView
+                android:id="@+id/ivShare"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_alignParentTop="true"
+                android:layout_toLeftOf="@id/ivFavorite"
+                android:layout_marginTop="16dp"
+                android:layout_marginEnd="8dp"
+                android:background="@drawable/card_background"
+                android:padding="8dp"
+                android:src="@drawable/ic_share"
+                android:clickable="true"
+                android:focusable="true"
+                android:contentDescription="Compartir receta" />
+
         </RelativeLayout>
 
         <!-- El resto del contenido permanece igual -->
@@ -194,6 +210,8 @@
             android:textSize="16sp"
             android:textColor="@color/text_dark"
             android:lineSpacingExtra="8dp" />
+
+
 
     </LinearLayout>
 
