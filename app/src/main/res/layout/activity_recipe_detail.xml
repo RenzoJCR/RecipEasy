@@ -16,14 +16,20 @@
             android:layout_height="wrap_content"
             android:layout_marginBottom="16dp">
 
-            <!-- Imagen de la receta -->
+            <VideoView
+                android:id="@+id/vvRecipeVideo"
+                android:layout_width="match_parent"
+                android:layout_height="250dp"
+                android:layout_margin="16dp" />
+
             <ImageView
                 android:id="@+id/ivRecipeImage"
                 android:layout_width="match_parent"
-                android:layout_height="200dp"
+                android:layout_height="250dp"
+                android:layout_margin="16dp"
                 android:scaleType="centerCrop"
-                android:background="@color/primary_light_orange"
-                android:contentDescription="Imagen de la receta" />
+                android:visibility="gone" />
+            <!-- oculta por defecto -->
 
             <!-- Botón de favoritos -->
             <ImageView

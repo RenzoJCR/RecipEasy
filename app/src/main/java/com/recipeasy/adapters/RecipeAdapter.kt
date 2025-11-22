@@ -1,10 +1,13 @@
 package com.recipeasy.adapters
 
+import android.content.Context
+import android.net.Uri
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
+import android.widget.VideoView
 import androidx.recyclerview.widget.RecyclerView
 import com.recipeasy.R
 import com.recipeasy.interfaces.OnRecipeClickListener
@@ -45,13 +48,24 @@ class RecipeAdapter(
         holder.description.text = recipe.descripcion
         holder.time.text = "${recipe.tiempoPreparacion} min"
         holder.difficulty.text = recipe.dificultad
-
-        // Mostrar la categoría con la primera letra en mayúscula
         holder.category.text = recipe.categoria.replaceFirstChar { it.uppercase() }
 
-        // Por ahora usamos un placeholder
-        holder.image.setImageResource(R.drawable.ic_placeholder_food)
+        val context = holder.itemView.context
+
+        val imageResId = context.resources.getIdentifier(
+            recipe.imagen,     // "breakfast_tamal_verde"
+            "drawable",
+            context.packageName
+        )
+
+        if (imageResId != 0) {
+            holder.image.setImageResource(imageResId)
+        } else {
+            holder.image.setImageResource(R.drawable.ic_placeholder_food)
+        }
     }
+
+
 
     override fun getItemCount(): Int = recipes.size
 

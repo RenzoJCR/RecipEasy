@@ -10,6 +10,9 @@ import com.recipeasy.database.DatabaseHelper
 import com.recipeasy.models.Receta
 import com.recipeasy.utils.SharedPreferencesHelper
 import android.content.Intent
+import android.net.Uri
+import android.widget.VideoView
+
 
 
 class RecipeDetailActivity : AppCompatActivity() {
@@ -103,8 +106,42 @@ $pasosTexto
         }.joinToString("\n\n")
         findViewById<TextView>(R.id.tvSteps).text = stepsText
 
-        // Por ahora usamos el placeholder, luego podemos cargar imágenes reales
-        findViewById<ImageView>(R.id.ivRecipeImage).setImageResource(R.drawable.ic_placeholder_food)
+        // 🎬 Video en el detalle
+        val videoView = findViewById<VideoView>(R.id.vvRecipeVideo)
+
+        // usamos el mismo nombre que en la imagen: receta.imagen
+        val videoResId = resources.getIdentifier(
+            receta.imagen,   // ej: "breakfast_tamal_verde"
+            "raw",
+            packageName
+        )
+
+        if (videoResId != 0) {
+            val uri = Uri.parse("android.resource://$packageName/$videoResId")
+            videoView.setVideoURI(uri)
+
+            videoView.setOnPreparedListener { mp ->
+                mp.isLooping = true
+                mp.setVolume(0f, 0f)
+                mp.start()
+            }
+        } else {
+            // Fallback opcional: si no hay video, mostramos imagen
+            val imageView = findViewById<ImageView>(R.id.ivRecipeImage)
+            val imageResId = resources.getIdentifier(
+                receta.imagen,
+                "drawable",
+                packageName
+            )
+
+            if (imageResId != 0) {
+                imageView.setImageResource(imageResId)
+            } else {
+                imageView.setImageResource(R.drawable.ic_placeholder_food)
+            }
+
+            Toast.makeText(this, "Video no encontrado, mostrando imagen.", Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun checkIfFavorite() {
