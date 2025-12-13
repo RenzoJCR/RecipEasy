@@ -35,6 +35,11 @@ android {
     kotlinOptions {
         jvmTarget = "11"
     }
+
+    // AÑADE ESTO para usar View Binding si no lo tienes
+    buildFeatures {
+        viewBinding = true
+    }
 }
 
 dependencies {
@@ -47,4 +52,13 @@ dependencies {
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     implementation("com.google.android.material:material:1.11.0")
+
+    // NUEVAS DEPENDENCIAS PARA PDF
+    // DEPENDENCIA CORREGIDA PARA PDF
+    implementation("com.itextpdf:itext7-core:7.2.5") {
+        // Excluir módulos conflictivos si es necesario
+        exclude(group = "com.github.librepdf", module = "openpdf")
+    }
+    implementation("androidx.documentfile:documentfile:1.0.1")
+    implementation("androidx.recyclerview:recyclerview:1.3.0")
 }

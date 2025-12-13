@@ -15,6 +15,11 @@ import com.recipeasy.R
 import com.recipeasy.database.DatabaseHelper
 import com.recipeasy.utils.SharedPreferencesHelper
 
+import android.content.pm.PackageManager
+import android.widget.Toast
+import androidx.core.app.ActivityCompat
+import com.recipeasy.utils.PermissionHelper
+
 class MainActivity : AppCompatActivity() {
 
     private lateinit var viewPager: ViewPager2
@@ -98,4 +103,23 @@ class MainActivity : AppCompatActivity() {
             else -> super.onOptionsItemSelected(item)
         }
     }
-}
+
+    // AÑADE ESTE MÉTODO AL FINAL DE LA CLASE
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+
+        when (requestCode) {
+            PermissionHelper.STORAGE_PERMISSION_REQUEST_CODE -> {
+                if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    Toast.makeText(this, "Permiso concedido", Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(this, "Permiso denegado. No se puede guardar PDF", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
+} // FIN DE LA CLASE
