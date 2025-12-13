@@ -1,24 +1,29 @@
 package com.recipeasy.activities
 
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.view.Menu
 import android.view.MenuItem
 import android.widget.SearchView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.viewpager2.widget.ViewPager2
 import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayoutMediator
 import com.recipeasy.adapters.CategoryPagerAdapter
 import com.recipeasy.R
 import com.recipeasy.database.DatabaseHelper
-import com.recipeasy.utils.SharedPreferencesHelper
-
-import android.content.pm.PackageManager
-import android.widget.Toast
-import androidx.core.app.ActivityCompat
+import com.recipeasy.utils.NotificationHelper
+import com.recipeasy.utils.NotificationScheduler
 import com.recipeasy.utils.PermissionHelper
+import com.recipeasy.utils.SharedPreferencesHelper
 
 class MainActivity : AppCompatActivity() {
 
@@ -28,15 +33,22 @@ class MainActivity : AppCompatActivity() {
     private lateinit var pagerAdapter: CategoryPagerAdapter
     private lateinit var prefs: SharedPreferencesHelper
     private lateinit var toolbar: Toolbar
+    private lateinit var notificationScheduler: NotificationScheduler
+
+    companion object {
+        private const val NOTIFICATION_PERMISSION_REQUEST_CODE = 200
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
+        // Inicializar base de datos y llenar URLs de video
         val dbHelper = DatabaseHelper(this)
         dbHelper.backfillVideoUrls()
 
-
         prefs = SharedPreferencesHelper(this)
+        notificationScheduler = NotificationScheduler(this)
 
         // Configurar la Toolbar
         setupToolbar()
@@ -44,6 +56,12 @@ class MainActivity : AppCompatActivity() {
         initViews()
         setupViewPager()
         setupSearchView()
+
+        // Pedir permiso de notificaciones y programarlas
+        setupNotifications()
+
+        // Manejar si venimos de una notificación
+        handleNotificationIntent()
     }
 
     private fun setupToolbar() {
@@ -87,7 +105,54 @@ class MainActivity : AppCompatActivity() {
         })
     }
 
-    // AGREGAR MENÚ DE USUARIO
+    private fun setupNotifications() {
+        // Para Android 13+ necesitamos pedir permiso
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(
+                    this,
+                    android.Manifest.permission.POST_NOTIFICATIONS
+                ) != PackageManager.PERMISSION_GRANTED
+            ) {
+                // Pedir permiso
+                ActivityCompat.requestPermissions(
+                    this,
+                    arrayOf(android.Manifest.permission.POST_NOTIFICATIONS),
+                    NOTIFICATION_PERMISSION_REQUEST_CODE
+                )
+            } else {
+                // Ya tenemos permiso, iniciar notificaciones
+                startScheduledNotifications()
+            }
+        } else {
+            // Android 12 o inferior, no necesita permiso explícito
+            startScheduledNotifications()
+        }
+    }
+
+    private fun startScheduledNotifications() {
+        // Mostrar primera notificación inmediatamente
+        Handler(Looper.getMainLooper()).postDelayed({
+            val notificationHelper = NotificationHelper(this)
+            notificationHelper.showRecipeNotification()
+            Toast.makeText(this, "Notificaciones activadas", Toast.LENGTH_SHORT).show()
+        }, 2000) // 2 segundos de delay al abrir la app
+
+        // Iniciar programación cada 10 segundos
+        notificationScheduler.startNotifications()
+    }
+
+    private fun handleNotificationIntent() {
+        intent?.extras?.let { extras ->
+            if (extras.getBoolean("FROM_NOTIFICATION", false)) {
+                val recipeName = extras.getString("RECIPE_NAME")
+                if (!recipeName.isNullOrEmpty()) {
+                    Toast.makeText(this, "Receta sugerida: $recipeName", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
+
+    // AGREGAR MENÚ DE USUARIO (PERFIL) - ESTO FALTABA
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         menuInflater.inflate(R.menu.main_menu, menu)
         return true
@@ -104,10 +169,10 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    // AÑADE ESTE MÉTODO AL FINAL DE LA CLASE
+    // UN SOLO MÉTODO onRequestPermissionsResult QUE MANEJA TODOS LOS PERMISOS
     override fun onRequestPermissionsResult(
         requestCode: Int,
-        permissions: Array<out String>,
+        permissions: Array<String>,
         grantResults: IntArray
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
@@ -115,11 +180,26 @@ class MainActivity : AppCompatActivity() {
         when (requestCode) {
             PermissionHelper.STORAGE_PERMISSION_REQUEST_CODE -> {
                 if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    Toast.makeText(this, "Permiso concedido", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "Permiso de almacenamiento concedido", Toast.LENGTH_SHORT).show()
                 } else {
-                    Toast.makeText(this, "Permiso denegado. No se puede guardar PDF", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "Permiso de almacenamiento denegado", Toast.LENGTH_SHORT).show()
+                }
+            }
+
+            NOTIFICATION_PERMISSION_REQUEST_CODE -> {
+                if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    startScheduledNotifications()
+                    Toast.makeText(this, "Permiso de notificaciones concedido", Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(this, "Notificaciones desactivadas", Toast.LENGTH_SHORT).show()
                 }
             }
         }
     }
-} // FIN DE LA CLASE
+
+    override fun onDestroy() {
+        super.onDestroy()
+        // Detener notificaciones al cerrar la app (opcional)
+        // notificationScheduler.stopNotifications()
+    }
+}

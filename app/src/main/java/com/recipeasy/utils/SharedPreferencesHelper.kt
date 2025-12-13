@@ -44,4 +44,14 @@ class SharedPreferencesHelper(context: Context) {
     fun clearUserData() {
         sharedPreferences.edit().clear().apply()
     }
+
+    // Añade al final de la clase SharedPreferencesHelper:
+
+    fun setLastNotificationDate(date: String) {
+        sharedPreferences.edit().putString("last_notification_date", date).apply()
+    }
+
+    fun getLastNotificationDate(): String {
+        return sharedPreferences.getString("last_notification_date", "") ?: ""
+    }
 }
