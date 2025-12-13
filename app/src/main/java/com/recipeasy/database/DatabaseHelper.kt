@@ -13,7 +13,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
 
     companion object {
         private const val DATABASE_NAME = "RecipEasy.db"
-        private const val DATABASE_VERSION = 3
+        private const val DATABASE_VERSION = 5
 
         // Tabla Usuarios
         const val TABLE_USERS = "usuarios"
@@ -28,6 +28,8 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         const val COLUMN_RECIPE_NAME = "nombre"
         const val COLUMN_RECIPE_DESCRIPTION = "descripcion"
         const val COLUMN_RECIPE_IMAGE = "imagen"
+
+        const val COLUMN_RECIPE_VIDEO_URL = "video_url"
         const val COLUMN_RECIPE_TIME = "tiempo_preparacion"
         const val COLUMN_RECIPE_PORTIONS = "porciones"
         const val COLUMN_RECIPE_DIFFICULTY = "dificultad"
@@ -61,6 +63,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
                 $COLUMN_RECIPE_NAME TEXT NOT NULL,
                 $COLUMN_RECIPE_DESCRIPTION TEXT,
                 $COLUMN_RECIPE_IMAGE TEXT,
+                $COLUMN_RECIPE_VIDEO_URL TEXT,
                 $COLUMN_RECIPE_TIME INTEGER,
                 $COLUMN_RECIPE_PORTIONS INTEGER,
                 $COLUMN_RECIPE_DIFFICULTY TEXT,
@@ -89,11 +92,68 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
-        db.execSQL("DROP TABLE IF EXISTS $TABLE_FAVORITES")
-        db.execSQL("DROP TABLE IF EXISTS $TABLE_RECIPES")
-        db.execSQL("DROP TABLE IF EXISTS $TABLE_USERS")
-        onCreate(db)
+        if (oldVersion < 4) {
+            db.execSQL(
+                "ALTER TABLE $TABLE_RECIPES ADD COLUMN $COLUMN_RECIPE_VIDEO_URL TEXT"
+            )
+        }
     }
+
+    fun backfillVideoUrls() {
+        val db = writableDatabase
+
+        val urlByImage = mapOf(
+            // DESAYUNOS
+            "breakfast_tamal_verde" to "https://youtu.be/qMgEv-1mf4c?si=zq8F3rE1RAlhlWTY",
+            "breakfast_pan_chicharron" to "https://youtu.be/G8xM27hT2q8?si=ULT59h2tBle6wtJA",
+            "breakfast_humita" to "https://youtu.be/t6ZGbT-Dskk?si=wj2JhkGQgCKg3Wkb",
+            "breakfast_caldo_gallina" to "https://youtu.be/qG-Lh46DHqE?si=_19lO8DIezLmnKty",
+            "breakfast_butifarra" to "https://youtu.be/22w5ToaTSDQ?si=v2Wrv8v58yv9RnCA",
+            "breakfast_chicharron_pescado" to "https://youtu.be/S825H-ksTvU?si=QX6rAg9V7W1QxpzD",
+            "breakfast_revuelto_rocoto" to "https://youtu.be/WjCgbqgoCrc?si=oGT6o2rH0dn1RX5j",
+
+            // ALMUERZOS
+            "lunch_lomo_saltado" to "https://youtu.be/sWXRJbGi6yQ?si=m_CKPTwOGrTwDwVg",
+            "lunch_aji_gallina" to "https://youtu.be/UdnT9ka7yAk?si=EPtto3C02UBzRa7Y",
+            "lunch_causa_limena" to "https://youtu.be/gtCIqYUCekU?si=q1U8tie65CBKPhuq",
+            "lunch_papa_huancaina" to "https://youtu.be/IjWgPVBCHXU?si=JoaIyjbkCWZeJ30L",
+            "lunch_arroz_pollo" to "https://youtu.be/Lk8OV9GMdXY?si=CCS4iLDgOrlqwSHY",
+            "lunch_seco_cordero" to "https://youtu.be/ik4MHm7ahRA?si=eUeWJ6lprkm9fiQG",
+            "lunch_ceviche_mixto" to "https://youtu.be/CuuFn81HJYk?si=h1QnhM4lpF1-56z5",
+
+            // CENAS
+            "dinner_tacu_tacu" to "https://youtu.be/bH0VjyvgQjc?si=_T6Urv_9n2gpe2gO",
+            "dinner_arroz_chaufa" to "https://youtu.be/M_r2lIuQ3qI?si=KZQfaoZdAtT6Db95",
+            "dinner_pollo_brasa" to "https://youtu.be/YpEXS20-SX4?si=6n8-Hyo7B4R6UGrA",
+            "dinner_anticuchos" to "https://youtu.be/MTVagyVam_o?si=7tiLaP-VNG3_99zA",
+            "dinner_parihuela" to "https://youtu.be/L99qG4HMTxk?si=75DBjgBVUSJUa2ct",
+            "dinner_carapulcra" to "https://youtu.be/no5l20i8WnM?si=PXEA1ar-2bV0Y6tN",
+            "dinner_chaufa_mariscos" to "https://youtu.be/hquYb706444?si=M5iR9OW-AAdV2o-F",
+
+            // POSTRES
+            "dessert_mazamorra_morada" to "https://youtu.be/0iFwT8mr_a4?si=JdqyzKQ3Yj_eby53",
+            "dessert_arroz_leche" to "https://youtu.be/hMY_bn6jTS8?si=C3HjOZmeIvn0GQ70",
+            "dessert_picarones" to "https://youtu.be/ZjnUl4UzApg?si=nd_yy-jsmOX9rar6",
+            "dessert_suspiro_limena" to "https://youtu.be/pdI3hr58U50?si=EbZzqgn6hqMODrxJ",
+            "dessert_turron_pepa" to "https://youtu.be/TElTX-lW0pM?si=W3HAFUG3kfqaUjHj",
+            "dessert_crema_volteada" to "https://youtu.be/ikRLowcQqTA?si=pzbQxMeF02kG1QPZ",
+            "dessert_ranfanote" to "https://youtu.be/gswqr5KGM0o?si=8XRP6Wiu0mgo8Axf"
+        )
+
+        db.beginTransaction()
+        try {
+            urlByImage.forEach { (imageKey, url) ->
+                db.execSQL(
+                    "UPDATE $TABLE_RECIPES SET $COLUMN_RECIPE_VIDEO_URL = ? WHERE $COLUMN_RECIPE_IMAGE = ?",
+                    arrayOf(url, imageKey)
+                )
+            }
+            db.setTransactionSuccessful()
+        } finally {
+            db.endTransaction()
+        }
+    }
+
 
     private fun insertSampleData(db: SQLiteDatabase) {
         // LIMPIAR RECETAS EXISTENTES PRIMERO
@@ -105,6 +165,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
             nombre = "Tamal Verde",
             descripcion = "Tamal relleno de cerdo con salsa verde, típico del desayuno limeño",
             imagen = "breakfast_tamal_verde",
+            videoUrl = "https://youtu.be/qMgEv-1mf4c?si=zq8F3rE1RAlhlWTY",
             tiempoPreparacion = 180,
             porciones = 6,
             dificultad = "Medio",
@@ -136,6 +197,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
             nombre = "Pan con Chicharrón",
             descripcion = "Clásico sandwich limeño con chicharrón de cerdo, camote y salsa criolla",
             imagen = "breakfast_pan_chicharron",
+            videoUrl = "https://youtu.be/G8xM27hT2q8?si=ULT59h2tBle6wtJA",
             tiempoPreparacion = 90,
             porciones = 4,
             dificultad = "Medio",
@@ -165,6 +227,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
             nombre = "Humita",
             descripcion = "Pasta de maíz fresco envuelta en hojas de choclo y cocida al vapor",
             imagen = "breakfast_humita",
+            videoUrl = "https://youtu.be/t6ZGbT-Dskk?si=wj2JhkGQgCKg3Wkb",
             tiempoPreparacion = 60,
             porciones = 8,
             dificultad = "Fácil",
@@ -195,6 +258,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
             nombre = "Caldo de Gallina",
             descripcion = "Reconfortante sopa de gallina con fideos y hierbas aromáticas",
             imagen = "breakfast_caldo_gallina",
+            videoUrl = "https://youtu.be/qG-Lh46DHqE?si=_19lO8DIezLmnKty",
             tiempoPreparacion = 120,
             porciones = 6,
             dificultad = "Fácil",
@@ -226,6 +290,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
             nombre = "Butifarra",
             descripcion = "Sandwich peruano de jamón del país con salsa criolla",
             imagen = "breakfast_butifarra",
+            videoUrl = "https://youtu.be/22w5ToaTSDQ?si=v2Wrv8v58yv9RnCA",
             tiempoPreparacion = 30,
             porciones = 4,
             dificultad = "Fácil",
@@ -256,6 +321,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
             nombre = "Chicharrón de Pescado",
             descripcion = "Filetes de pescado empanizados y fritos, acompañados de yuca y salsa criolla",
             imagen = "breakfast_chicharron_pescado",
+            videoUrl = "https://youtu.be/S825H-ksTvU?si=QX6rAg9V7W1QxpzD",
             tiempoPreparacion = 45,
             porciones = 4,
             dificultad = "Medio",
@@ -285,6 +351,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
             nombre = "Revuelto de Rocoto",
             descripcion = "Huevos revueltos con rocoto, cebolla y tomate, picante y sabroso",
             imagen = "breakfast_revuelto_rocoto",
+            videoUrl = "https://youtu.be/WjCgbqgoCrc?si=oGT6o2rH0dn1RX5j",
             tiempoPreparacion = 25,
             porciones = 3,
             dificultad = "Fácil",
@@ -315,6 +382,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
             nombre = "Lomo Saltado",
             descripcion = "Salteado de lomo fino con cebolla, tomate y papas fritas, fusión peruano-china",
             imagen = "lunch_lomo_saltado",
+            videoUrl = "https://youtu.be/sWXRJbGi6yQ?si=m_CKPTwOGrTwDwVg",
             tiempoPreparacion = 40,
             porciones = 4,
             dificultad = "Medio",
@@ -346,6 +414,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
             nombre = "Aji de Gallina",
             descripcion = "Pollo deshilachado en cremosa salsa de ají amarillo con nueces y queso",
             imagen = "lunch_aji_gallina",
+            videoUrl = "https://youtu.be/UdnT9ka7yAk?si=EPtto3C02UBzRa7Y",
             tiempoPreparacion = 90,
             porciones = 6,
             dificultad = "Medio",
@@ -377,6 +446,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
             nombre = "Causa Limeña",
             descripcion = "Pastel frío de papa amarilla con relleno de pollo o atún",
             imagen = "lunch_causa_limena",
+            videoUrl = "https://youtu.be/gtCIqYUCekU?si=q1U8tie65CBKPhuq",
             tiempoPreparacion = 60,
             porciones = 8,
             dificultad = "Medio",
@@ -408,6 +478,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
             nombre = "Papa a la Huancaína",
             descripcion = "Papas sancochadas bañadas en cremosa salsa de ají amarillo y queso",
             imagen = "lunch_papa_huancaina",
+            videoUrl = "https://youtu.be/IjWgPVBCHXU?si=JoaIyjbkCWZeJ30L",
             tiempoPreparacion = 45,
             porciones = 6,
             dificultad = "Fácil",
@@ -439,6 +510,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
             nombre = "Arroz con Pollo",
             descripcion = "Arroz verde perfumado con culantro y pollo tierno",
             imagen = "lunch_arroz_pollo",
+            videoUrl = "https://youtu.be/Lk8OV9GMdXY?si=CCS4iLDgOrlqwSHY",
             tiempoPreparacion = 60,
             porciones = 6,
             dificultad = "Fácil",
@@ -470,6 +542,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
             nombre = "Seco de Cordero",
             descripcion = "Guiso de cordero con culantro, frejoles y yuca",
             imagen = "lunch_seco_cordero",
+            videoUrl = "https://youtu.be/ik4MHm7ahRA?si=eUeWJ6lprkm9fiQG",
             tiempoPreparacion = 150,
             porciones = 6,
             dificultad = "Difícil",
@@ -500,6 +573,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
             nombre = "Ceviche Mixto",
             descripcion = "Pescado y mariscos marinados en jugo de limón con cebolla y ají",
             imagen = "lunch_ceviche_mixto",
+            videoUrl = "https://youtu.be/CuuFn81HJYk?si=h1QnhM4lpF1-56z5",
             tiempoPreparacion = 35,
             porciones = 4,
             dificultad = "Fácil",
@@ -531,6 +605,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
             nombre = "Tacu Tacu con Lomo",
             descripcion = "Tortilla de arroz y frejoles refritos con lomo saltado",
             imagen = "dinner_tacu_tacu",
+            videoUrl = "https://youtu.be/bH0VjyvgQjc?si=_T6Urv_9n2gpe2gO",
             tiempoPreparacion = 50,
             porciones = 4,
             dificultad = "Medio",
@@ -562,6 +637,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
             nombre = "Arroz Chaufa",
             descripcion = "Arroz frito estilo chifa con pollo, huevo y verduras",
             imagen = "dinner_arroz_chaufa",
+            videoUrl = "https://youtu.be/M_r2lIuQ3qI?si=KZQfaoZdAtT6Db95",
             tiempoPreparacion = 30,
             porciones = 4,
             dificultad = "Fácil",
@@ -592,6 +668,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
             nombre = "Pollo a la Brasa",
             descripcion = "Pollo marinado y asado con carbón, crocante por fuera y jugoso por dentro",
             imagen = "dinner_pollo_brasa",
+            videoUrl = "https://youtu.be/YpEXS20-SX4?si=6n8-Hyo7B4R6UGrA",
             tiempoPreparacion = 120,
             porciones = 4,
             dificultad = "Difícil",
@@ -622,6 +699,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
             nombre = "Anticuchos",
             descripcion = "Brochetas de corazón de res marinadas en ají panca y especias",
             imagen = "dinner_anticuchos",
+            videoUrl = "https://youtu.be/MTVagyVam_o?si=7tiLaP-VNG3_99zA",
             tiempoPreparacion = 60,
             porciones = 4,
             dificultad = "Medio",
@@ -650,6 +728,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
             nombre = "Parihuela",
             descripcion = "Sustanciosa sopa de mariscos con pescado y especias",
             imagen = "dinner_parihuela",
+            videoUrl = "https://youtu.be/L99qG4HMTxk?si=75DBjgBVUSJUa2ct",
             tiempoPreparacion = 60,
             porciones = 6,
             dificultad = "Medio",
@@ -681,6 +760,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
             nombre = "Carapulcra",
             descripcion = "Guiso de papa seca con cerdo y maní, de origen andino",
             imagen = "dinner_carapulcra",
+            videoUrl = "https://youtu.be/no5l20i8WnM?si=PXEA1ar-2bV0Y6tN",
             tiempoPreparacion = 120,
             porciones = 6,
             dificultad = "Difícil",
@@ -711,6 +791,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
             nombre = "Chaufa de Mariscos",
             descripcion = "Arroz frito con variedad de mariscos frescos y salsa de ostión",
             imagen = "dinner_chaufa_mariscos",
+            videoUrl = "https://youtu.be/hquYb706444?si=M5iR9OW-AAdV2o-F",
             tiempoPreparacion = 35,
             porciones = 4,
             dificultad = "Medio",
@@ -742,6 +823,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
             nombre = "Mazamorra Morada",
             descripcion = "Postre espeso de maíz morado con frutas secas y especias",
             imagen = "dessert_mazamorra_morada",
+            videoUrl = "https://youtu.be/0iFwT8mr_a4?si=JdqyzKQ3Yj_eby53",
             tiempoPreparacion = 90,
             porciones = 8,
             dificultad = "Medio",
@@ -773,6 +855,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
             nombre = "Arroz con Leche",
             descripcion = "Postre cremoso de arroz con leche, canela y pasas",
             imagen = "dessert_arroz_leche",
+            videoUrl = "https://youtu.be/hMY_bn6jTS8?si=C3HjOZmeIvn0GQ70",
             tiempoPreparacion = 60,
             porciones = 6,
             dificultad = "Fácil",
@@ -801,6 +884,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
             nombre = "Picarones",
             descripcion = "Anillos fritos de masa de camote y zapato bañados en miel de chancaca",
             imagen = "dessert_picarones",
+            videoUrl = "https://youtu.be/ZjnUl4UzApg?si=nd_yy-jsmOX9rar6",
             tiempoPreparacion = 120,
             porciones = 8,
             dificultad = "Difícil",
@@ -832,6 +916,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
             nombre = "Suspiro a la Limeña",
             descripcion = "Dulce de manjar blanco cubierto con merengue de vino oporto",
             imagen = "dessert_suspiro_limena",
+            videoUrl = "https://youtu.be/pdI3hr58U50?si=EbZzqgn6hqMODrxJ",
             tiempoPreparacion = 45,
             porciones = 6,
             dificultad = "Medio",
@@ -861,6 +946,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
             nombre = "Turrón de Doña Pepa",
             descripcion = "Postre de capas de masa crujiente unidas con miel de anís",
             imagen = "dessert_turron_pepa",
+            videoUrl = "https://youtu.be/TElTX-lW0pM?si=W3HAFUG3kfqaUjHj",
             tiempoPreparacion = 180,
             porciones = 12,
             dificultad = "Difícil",
@@ -891,6 +977,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
             nombre = "Crema Volteada",
             descripcion = "Flan de leche con caramelo, versión peruana del crème caramel",
             imagen = "dessert_crema_volteada",
+            videoUrl = "https://youtu.be/ikRLowcQqTA?si=pzbQxMeF02kG1QPZ",
             tiempoPreparacion = 90,
             porciones = 8,
             dificultad = "Medio",
@@ -919,6 +1006,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
             nombre = "Ranfañote",
             descripcion = "Postre de pan duro, miel de chancaca y frutos secos",
             imagen = "dessert_ranfanote",
+            videoUrl = "https://youtu.be/gswqr5KGM0o?si=8XRP6Wiu0mgo8Axf",
             tiempoPreparacion = 40,
             porciones = 6,
             dificultad = "Fácil",
@@ -951,6 +1039,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
             put(COLUMN_RECIPE_NAME, receta.nombre)
             put(COLUMN_RECIPE_DESCRIPTION, receta.descripcion)
             put(COLUMN_RECIPE_IMAGE, receta.imagen)
+            put(COLUMN_RECIPE_VIDEO_URL, receta.videoUrl)
             put(COLUMN_RECIPE_TIME, receta.tiempoPreparacion)
             put(COLUMN_RECIPE_PORTIONS, receta.porciones)
             put(COLUMN_RECIPE_DIFFICULTY, receta.dificultad)
@@ -1005,6 +1094,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
                 nombre = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_RECIPE_NAME)),
                 descripcion = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_RECIPE_DESCRIPTION)),
                 imagen = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_RECIPE_IMAGE)),
+                videoUrl = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_RECIPE_VIDEO_URL)),
                 tiempoPreparacion = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_RECIPE_TIME)),
                 porciones = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_RECIPE_PORTIONS)),
                 dificultad = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_RECIPE_DIFFICULTY)),
@@ -1030,6 +1120,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
                 nombre = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_RECIPE_NAME)),
                 descripcion = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_RECIPE_DESCRIPTION)),
                 imagen = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_RECIPE_IMAGE)),
+                videoUrl = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_RECIPE_VIDEO_URL)),
                 tiempoPreparacion = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_RECIPE_TIME)),
                 porciones = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_RECIPE_PORTIONS)),
                 dificultad = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_RECIPE_DIFFICULTY)),
@@ -1058,6 +1149,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
                 nombre = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_RECIPE_NAME)),
                 descripcion = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_RECIPE_DESCRIPTION)),
                 imagen = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_RECIPE_IMAGE)),
+                videoUrl = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_RECIPE_VIDEO_URL)),
                 tiempoPreparacion = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_RECIPE_TIME)),
                 porciones = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_RECIPE_PORTIONS)),
                 dificultad = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_RECIPE_DIFFICULTY)),
@@ -1115,6 +1207,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
                 nombre = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_RECIPE_NAME)),
                 descripcion = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_RECIPE_DESCRIPTION)),
                 imagen = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_RECIPE_IMAGE)),
+                videoUrl = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_RECIPE_VIDEO_URL)),
                 tiempoPreparacion = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_RECIPE_TIME)),
                 porciones = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_RECIPE_PORTIONS)),
                 dificultad = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_RECIPE_DIFFICULTY)),
@@ -1147,6 +1240,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
                 nombre = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_RECIPE_NAME)),
                 descripcion = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_RECIPE_DESCRIPTION)),
                 imagen = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_RECIPE_IMAGE)),
+                videoUrl = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_RECIPE_VIDEO_URL)),
                 tiempoPreparacion = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_RECIPE_TIME)),
                 porciones = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_RECIPE_PORTIONS)),
                 dificultad = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_RECIPE_DIFFICULTY)),
@@ -1194,6 +1288,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
                 nombre = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_RECIPE_NAME)),
                 descripcion = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_RECIPE_DESCRIPTION)),
                 imagen = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_RECIPE_IMAGE)),
+                videoUrl = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_RECIPE_VIDEO_URL)),
                 tiempoPreparacion = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_RECIPE_TIME)),
                 porciones = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_RECIPE_PORTIONS)),
                 dificultad = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_RECIPE_DIFFICULTY)),
