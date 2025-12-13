@@ -12,6 +12,7 @@ import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayoutMediator
 import com.recipeasy.adapters.CategoryPagerAdapter
 import com.recipeasy.R
+import com.recipeasy.database.DatabaseHelper
 import com.recipeasy.utils.SharedPreferencesHelper
 
 class MainActivity : AppCompatActivity() {
@@ -26,6 +27,9 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        val dbHelper = DatabaseHelper(this)
+        dbHelper.backfillVideoUrls()
+
 
         prefs = SharedPreferencesHelper(this)
 

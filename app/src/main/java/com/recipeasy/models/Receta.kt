@@ -8,6 +8,7 @@ data class Receta(
     val nombre: String,
     val descripcion: String,
     val imagen: String,
+    val videoUrl: String? = null,
     val tiempoPreparacion: Int,
     val porciones: Int,
     val dificultad: String,
@@ -22,6 +23,7 @@ data class Receta(
             nombre: String,
             descripcion: String,
             imagen: String,
+            videoUrl: String?,
             tiempoPreparacion: Int,
             porciones: Int,
             dificultad: String,
@@ -36,6 +38,7 @@ data class Receta(
                 nombre = nombre,
                 descripcion = descripcion,
                 imagen = imagen,
+                videoUrl = videoUrl,
                 tiempoPreparacion = tiempoPreparacion,
                 porciones = porciones,
                 dificultad = dificultad,
@@ -49,6 +52,4 @@ data class Receta(
     fun getImageResId(context: Context): Int =
         context.resources.getIdentifier(imagen, "drawable", context.packageName)
 
-    fun getVideoResId(context: Context): Int =
-        context.resources.getIdentifier(imagen, "raw", context.packageName)
 }
